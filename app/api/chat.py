@@ -1,8 +1,11 @@
-import asyncio
 import json
+from turtledemo.clock import jump
+
 from fastapi import APIRouter
+from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
+from app.graph.builder import graph
 
 #实例化路由小组
 router = APIRouter()
@@ -15,18 +18,23 @@ class ChatResponse(BaseModel):
 @router.get("/ping")
 async def ping():
     return {"pong": True}
+
 #异步AgentFlow流式回复
 @router.post("/chat/stream")
 async def chat_stream(req: ChatResponse):
     async def event_gen():
-        text = f"你说的是：{req.message}。这是AgentFlow的流式回复演习"
-        for ch in text:
-            yield {
-                "event": "token",
-                "data": json.dumps({"content": ch},ensure_ascii=False),
-            }
-            await asyncio.sleep(0.03)
-        yield {"event": "done","data": json.dumps({"trace_id":"demo"})}
+        state = {"messages":[HumanMessage(content=req.message)]}
+        async for event in graph.astream_events(state,version="v2"):
+            kind = event["event"]
+            #节点启动事件
+            if kind == "on_chain_start" and event.get("name") in {"supervisor","db_query","rag","general"}:
+                yield {"event":"node","data":json.dumps({"node":event["name"]})}
+            #llm输出token事件
+            elif kind == "on_chat_model_stream":
+                content = event["data"]["chunk"].content
+                if content:
+                    yield {"event":"token","data":json.dumps({"content":content},ensure_ascii=False),}
+        yield {"event":"done","data": json.dumps({"trace_id":"week2-demo"})}
     return EventSourceResponse(event_gen())
 
 
