@@ -9,4 +9,5 @@ def get_llm(temperature: float = 0.0) -> ChatOpenAI:
         api_key=settings.llm_api_key,
         base_url=settings.llm_base_url,
         temperature=temperature,
+        model_kwargs={"stream_options":{"include_usage":True}}
     )

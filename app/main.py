@@ -3,14 +3,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api.chat import router as chat_router
 from app.db.session import init_db
+from app.memory.checkpointer import checkpointer_cm
 from app.observability.metrics import metrics_endpoint
 from contextlib import asynccontextmanager
+from app.observability.metrics import metrics_endpoint
 
 #异步上下文管理器一键创建表函数
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    #初始化 SQLite 表（workflows,sessions,traces,tool_calls）
     await init_db()
-    yield
+
+    #初始化 LangGraph 的Checkpointer(存对话历史）
+    async with checkpointer_cm as cp:
+        app.state.checkpointer = cp
+        yield
 
 #实例化FastAPI实例对象
 app = FastAPI(title=settings.app_name,lifespan=lifespan)

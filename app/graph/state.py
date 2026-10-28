@@ -8,3 +8,4 @@ class AgentState(TypedDict):
     messages: Annotated[list[BaseMessage],add_messages]
     intent: Literal["db_query","rag","general"] | None
     error: str |None
+    retry_count: int #记录重试次数
