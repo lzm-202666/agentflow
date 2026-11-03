@@ -57,7 +57,8 @@ async def supervisor_node(state) -> dict:
             content = content[3:-3].strip()
 
         data = json.loads(content)
-        intent = data.get("intent", "general")
+        intent = data.get("intent", "general")#.get纯力工
+        #兜底如果返回intent这个键名了但是值不在这个列表里面，就进入if代码块
         if intent not in ["db_query", "rag", "general"]:
             intent = "general"
         return {"intent": intent}

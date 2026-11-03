@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./agentflow.db"
 
     llm_api_key: str = ""
-    llm_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
-    llm_model: str = "glm-4-flash"
+    llm_base_url: str = "https://api.deepseek.com"
+    llm_model: str = "deepseek-chat"
 
 settings = Settings()

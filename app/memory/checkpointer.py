@@ -17,4 +17,5 @@ if not hasattr(aiosqlite.Connection, "is_alive"):
 # ==========================================
 
 # 注意：这个 saver 是一个 context manager，我们在 FastAPI 的 lifespan 里启动它
+#checkpointer操纵checpointer.db文件的对象
 checkpointer_cm = AsyncSqliteSaver.from_conn_string("checkpoints.db")

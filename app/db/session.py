@@ -18,5 +18,5 @@ async def init_db() -> None:
 
 #创建(依赖函数)创建会话功能
 async def get_db() -> AsyncGenerator[AsyncSession,None]:
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal as session:#session操纵普通日志文件的对象
         yield session

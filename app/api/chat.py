@@ -5,18 +5,17 @@ from fastapi import APIRouter,Request
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from starlette import status
 
 from app.graph.builder import  build_graph
 from app.db.session import AsyncSessionLocal
-from app.db.models import Trace
+from app.db.models import Trace,Session
+from sqlalchemy import select
 
 #实例化路由小组
 router = APIRouter()
 
 #定义基于BaseModel类的自动校验，将前端json字符串自动转为python对象的类
-class ChatResponse(BaseModel):
+class ChatRequest(BaseModel):
     message: str
     session_id: str
 
@@ -27,11 +26,12 @@ async def ping():
 
 #异步AgentFlow流式回复
 @router.post("/chat/stream")
-async def chat_stream(req: ChatResponse,request:Request):
+async def chat_stream(req: ChatRequest,request:Request):
     #从 app.state 拿 checkpointer,动态构建带记忆的图
     checkpointer = request.app.state.checkpointer
     graph = build_graph(checkpointer=checkpointer)
 
+    #定义事件生成器函数
     async def event_gen():
         state = {"messages":[HumanMessage(content=req.message)]}
         config = {"configurable":{"thread_id":req.session_id},"recursion_limit":25}
@@ -65,41 +65,58 @@ async def chat_stream(req: ChatResponse,request:Request):
                     has_streamed_tokens = True
                     final_output += content
                     yield {"event":"token","data":json.dumps({"content":content},ensure_ascii=False),}
+                                                                # ensure_ascii=False中文原样输出
 
             elif kind == "on_chain_end" and event.get("name") == "LangGraph":
                 if not has_streamed_tokens:
-                    final_state = event["data"].get("output",{})
+                    final_state = event["data"].get("output",None)
                     messages = final_state.get("messages",[])
                     if messages:
-                        final_state = messages[-1].content
+                        final_output = messages[-1].content
                         if final_output:
-                            yield {"event":"token","data":json.dump({"content":final_output},ensure_ascii=False)}
+                            yield {"event":"token","data":json.dumps({"content":final_output},ensure_ascii=False)}
 
             # 抓取大模型返回的 Token 消耗（流式响应通常在最末尾的 chunk 里带 usage )
             elif kind == "on_chat_model_end":
-                output = event["data"].get("output", {})
-
+                output = event["data"].get("output", None)
+                if output is None:
+                    continue
                 # 方式 1：尝试直接从 usage_metadata 获取（新版 LangChain）
                 usage = getattr(output, "usage_metadata", None)
 
                 # 方式 2：如果上面没拿到，尝试从 response_metadata 获取（旧版或某些兼容模型）
-                if not usage and hasattr(output, "response_metadata"):
-                    usage = output.response_metadata.get("token_usage", {})
+                if not usage:
+                    response_metadata = getattr(output, "response_metadata", None)
+                    if response_metadata:
+                        usage = response_metadata.get("usage_tokens",{})
 
                 # 拿到数据后累加
-                if usage:
+                if usage and isinstance(usage,dict):
                     # 兼容 input_tokens 和 prompt_tokens 两种键名
                     prompt_tokens += usage.get("input_tokens", 0) or usage.get("prompt_tokens", 0)
                     completion_tokens += usage.get("output_tokens", 0) or usage.get("completion_tokens", 0)
 
+
+        #整张图都跑完了执行下面
         # ================= 新增：落库 =================
         latency_ms = int((time.time() - start_time) * 1000)
         async with AsyncSessionLocal() as db:
+            stmt = select(Session).where(Session.id == req.session_id)
+            existing_session = (await db.execute(stmt)).scalar_one_or_none()
+
+            if not existing_session:
+                #直接用前端ID当主键
+                new_session = Session(id=req.session_id)
+                db.add(new_session)
+                await db.flush()#刷新一下，确保外键能关联
             # 简单估算一下成本（假设每百万 token 2块钱，仅作演示）
             cost = (prompt_tokens + completion_tokens) * 0.000002
+            trace_id = str(uuid.uuid4())
 
+            #落库Trace（并把session_id也存进Trace表）
             trace = Trace(
-                id=str(uuid.uuid4()),
+                id=trace_id,
+                session_id=req.session_id,
                 input=req.message,
                 output=final_output,
                 route=route_intent,
@@ -112,7 +129,7 @@ async def chat_stream(req: ChatResponse,request:Request):
             db.add(trace)
             await db.commit()
 
-        yield {"event":"done","data": json.dumps({"trace_id":trace.id,"latency_ms":latency_ms})}
+        yield {"event":"done","data": json.dumps({"trace_id":trace_id,"latency_ms":latency_ms})}
     return EventSourceResponse(event_gen())
 
 

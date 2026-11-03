@@ -22,7 +22,8 @@ class BaseTool:
             #pydantic严格校验返回BaseModel类或子类的实例对象，校验好的实例对象
             validated_args = self.args_schema(**raw_args)
             #执行真实逻辑
-            result = await self.run(validated_args)
+            result = await self.run(validated_args)#result是run函数返回的字典return {"month":args.month,"amount":row[0]}
+                                                   #{"month":"2026-10","amount":12000}
             return {
                 "success":True,
                 "data":result,
