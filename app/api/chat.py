@@ -49,9 +49,6 @@ async def chat_stream(req: ChatRequest,request:Request):
             kind = event["event"]
             #节点启动事件
             if kind == "on_chain_start" and event.get("name") in {"supervisor","db_query","rag","general","fallback"}:
-                if event["name"] != "supervisor" and route_intent == "unknown":
-                    #记录最终走的分支
-                    route_intent = event["name"]
                 yield {"event":"node","data":json.dumps({"node":event["name"]})}
             #llm输出token事件
             elif kind == "on_chat_model_stream":
@@ -67,6 +64,15 @@ async def chat_stream(req: ChatRequest,request:Request):
                     yield {"event":"token","data":json.dumps({"content":content},ensure_ascii=False),}
                                                                 # ensure_ascii=False中文原样输出
 
+            # 【新增】监听 supervisor 节点的结束事件，精准提取大模型返回的 intent
+            elif kind == "on_chain_end" and event.get("name") == "supervisor":
+                supervisor_output = event["data"].get("output",None)
+
+                # 防御性编程：确保拿到的字典里真的有 intent
+                if isinstance(supervisor_output,dict) and "intent" in supervisor_output:
+                    route_intent = supervisor_output["intent"]
+
+            #跑图结束事件
             elif kind == "on_chain_end" and event.get("name") == "LangGraph":
                 if not has_streamed_tokens:
                     final_state = event["data"].get("output",None)
@@ -88,7 +94,7 @@ async def chat_stream(req: ChatRequest,request:Request):
                 if not usage:
                     response_metadata = getattr(output, "response_metadata", None)
                     if response_metadata:
-                        usage = response_metadata.get("usage_tokens",{})
+                        usage = response_metadata.get("token_usage",{})
 
                 # 拿到数据后累加
                 if usage and isinstance(usage,dict):
