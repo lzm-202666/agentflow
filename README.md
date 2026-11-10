@@ -44,3 +44,21 @@
    - 编写 `rag/retriever.py`，实现 `HybridRetriever` 核心类。
    - **关键词检索**：引入 `jieba` 分词与 `BM25Okapi` 算法，解决了向量检索对专有名词（如“T+60 天”）召回不准的痛点。
    - **RRF 倒数排名融合**：实现了 `rrf_fusion` 算法，将量纲不同的向量相似度与 BM25 得分进行排名级融合，输出高精度的 Top-K 检索结果。
+
+### 🚀 Week 4 核心架构大重构：企业级 RAG 混合检索与评测闭环
+
+在完成基础的 RAG 链路后，针对真实工程环境中的痛点，对检索层与工程配置进行了深度重构：
+
+1. **依赖与运行环境调优（彻底解决版本冲突）**：
+   - 废弃本地 `sentence-transformers`，全面接入阿里云 `DashScopeEmbeddings` 与 `qwen3-rerank`。
+   - 解决了 Python 3.13 环境下旧版 `numpy` 与 `chromadb` 编译冲突的致命问题。
+   - 全面引入 `Path` 绝对路径解析，彻底解决 PyCharm 跨目录运行脚本时找不到 `.env` 与 `chroma_data` 的相对路径痛点。
+2. **自研混合检索器（HybridRetriever）**：
+   - 引入 `jieba` 分词与 `BM25Okapi`，构建关键词精准匹配能力。
+   - **手写 RRF（倒数排名融合）算法**：将量纲不同的向量相似度与 BM25 得分进行排名级融合。
+   - 增加空库防呆拦截，解决了 BM25 初始化时的 `ZeroDivisionError`。
+3. **云端重排容错架构（Reranker）**：
+   - 针对云端重排 API 不返回原文的痛点，摒弃直接取 `item.document.text`，改为使用 `item.index` 结合本地 `documents` 列表进行引用映射，并透传原始 `metadata`。
+   - **加入企业级降级策略**：使用 `try-except` 包裹网络请求，若第三方 API 宕机或超时，自动无缝降级返回混合检索的基础 Top-K 结果，保障业务永不中断。
+4. **评测闭环与 Baseline 对比**：
+   - 构建针对新能源车企的 10 条强干扰测试集，基于 `runner.py` 跑通纯向量检索、混合检索与重排后的 Recall 指标对比。

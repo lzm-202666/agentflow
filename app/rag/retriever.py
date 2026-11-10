@@ -3,10 +3,15 @@ from rank_bm25 import BM25Okapi
 from langchain_chroma import Chroma
 from langchain_community.embeddings import DashScopeEmbeddings
 from app.config import settings
+from pathlib import Path
+
+
+#拿到项目根目录
+ROOT_DIR=Path(__file__).resolve().parent.parent.parent
 
 
 class HybridRetriever:
-    def __init__(self, persist_dir: str = "chroma_data"):
+    def __init__(self, persist_dir: str = str(ROOT_DIR / "chroma_data")):
         # 1. 初始化向量库连接
         self.embeddings = DashScopeEmbeddings(
             model="text-embedding-v2",
@@ -19,6 +24,10 @@ class HybridRetriever:
         data = self.vectorstore.get()
         self.documents = data["documents"]
         self.metadatas = data["metadatas"]
+
+        # 防止数据库真的空了报 ZeroDivision 错
+        if not self.documents:
+            raise ValueError("❌ 向量数据库是空的！请先运行 indexer.py！")
 
         # 使用 jieba 分词构建 BM25
         tokenized_corpus = [list(jieba.cut(doc)) for doc in self.documents]
@@ -59,10 +68,10 @@ class HybridRetriever:
             content = doc["page_content"]
             rrf_scores[content] = rrf_scores.get(content, 0) + 1 / (k + rank + 1)
 
-        # 按融合分数降序排序
+        # 按融合分数降序排序sorted_docs是元组列表
         sorted_docs = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
 
-        # 还原格式
+        # 还原格式->字典列表
         fused_results = []
         for content, score in sorted_docs:
             fused_results.append({"page_content": content, "rrf_score": score})

@@ -4,9 +4,14 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_community.embeddings import DashScopeEmbeddings
 from app.config import settings
+from pathlib import Path
 
 
-def build_vector_db(data_dir: str = "data", persist_dir: str = "chroma_data"):
+# 【新增】获取项目根目录
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+
+
+def build_vector_db(data_dir: str = str(ROOT_DIR / "data"), persist_dir: str = str(ROOT_DIR / "chroma_data")):
     """
     读取文本文件，切分，并存入 Chroma 向量数据库
     """

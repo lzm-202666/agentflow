@@ -1,0 +1,10 @@
+{"query": "座舱大模型显存溢出触发了OOMKilled，该改哪个参数？", "ground_truth": "max_num_seqs"}
+{"query": "电池BMS系统上报数据用的是哪个端口？", "ground_truth": "50051"}
+{"query": "车机OTA升级包下载报错ERR-504该怎么处理？", "ground_truth": "Gateway Timeout"}
+{"query": "如果日志出现ERR-909，通常是什么问题？", "ground_truth": "Kafka"}
+{"query": "云端RPC网关超时的默认阈值是多少？", "ground_truth": "3000ms"}
+{"query": "去二线城市出差，住宿标准是多少钱？", "ground_truth": "400"}
+{"query": "派驻充电站的售后工程师有额外的补贴吗？", "ground_truth": "150"}
+{"query": "买一台A100算力服务器需要谁签字？", "ground_truth": "财务总监"}
+{"query": "技术服务费发票的抵扣税率是多少？", "ground_truth": "6%"}
+{"query": "员工如果把车主隐私数据传到公有云会怎么样？", "ground_truth": "解除劳动合同"}
