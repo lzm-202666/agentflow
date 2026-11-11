@@ -31,18 +31,18 @@ def run_eval():
         gt = item["ground_truth"]
 
         # 1. 纯向量检索
-        v_res = retriever.vector_search(query, top_k=5)
+        v_res = retriever.vector_search(query, top_k=2)
         v_res_formatted = [{"page_content": d.page_content} for d in v_res]
         v_hit = calculate_recall(v_res_formatted, gt)
         vector_recall += v_hit
 
         # 2. 混合检索 (BM25 + 向量 RRF)
-        h_res = retriever.hybrid_search(query, top_k=5)
+        h_res = retriever.hybrid_search(query, top_k=2)
         h_hit = calculate_recall(h_res, gt)
         hybrid_recall += h_hit
 
         # 3. 混合检索 + 重排 (Rerank)
-        hr_res = reranker.rerank(query, h_res, top_k=3)
+        hr_res = reranker.rerank(query, h_res, top_k=2)
         hr_hit = calculate_recall(hr_res, gt)
         hybrid_rerank_recall += hr_hit
 

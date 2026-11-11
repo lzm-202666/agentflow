@@ -77,7 +77,7 @@ class HybridRetriever:
             fused_results.append({"page_content": content, "rrf_score": score})
         return fused_results
 
-    def hybrid_search(self, query: str, top_k: int = 5):
+    def hybrid_search(self, query: str, top_k: int = 3):
         """混合检索入口"""
         vec_res = self.vector_search(query, top_k=top_k * 2)
         bm_res = self.bm25_search(query, top_k=top_k * 2)
