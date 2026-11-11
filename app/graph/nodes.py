@@ -1,6 +1,8 @@
 from langchain_core.messages import AIMessage,SystemMessage,HumanMessage
 from app.llm import get_llm
 from app.tools.db_tool import db_query_tool,DBQueryArgs
+from app.rag.retriever import HybridRetriever
+from app.rag.reranker import CloudReranker
 
 #定义数据库查询函数db_query_node，知识库检索函数rag_node，通用问答函数general_node
 async def db_query_node(state) -> dict:
@@ -40,10 +42,45 @@ async def db_query_node(state) -> dict:
             "retry_count":state.get("retry_count",0) + 1,#失败重试次数
         }
 
+#【重写】真实的知识库检索节点
 async def rag_node(state) -> dict:
-    # 第 4 周替换为真实 retriever + reranker
-    mock = "[mock RAG] 已识别为知识库检索。第 4 周接入混合检索。"
-    return {"messages":[AIMessage(content=mock)]}
+    # 1. 拿到用户最新的问题
+    user_query = state["messages"][-1].content
+
+    try:
+        # 2. 混合检索捞出 Top-5
+        retriever = HybridRetriever()
+        hybrid_results = retriever.hybrid_search(user_query, top_k=5)
+
+        # 3. 重排筛选出 Top-2
+        reranker = CloudReranker()
+        final_results = reranker.rerank(user_query, hybrid_results, top_k=2)
+
+        # 4. 把筛选出来的文档拼接成上下文
+        context = "\n\n".join([doc["page_content"] for doc in final_results])
+
+        # 5. 构造 Prompt 交给大模型生成回答（加入严格防幻觉指令）
+        system_prompt = (
+            "你是一个新能源车企的智能助手。请严格根据下面提供的【参考资料】回答用户的问题。\n"
+            "如果参考资料中没有相关信息，请直接回答“根据现有知识库无法回答”，千万不要编造。\n\n"
+            f"【参考资料】\n{context}"
+        )
+
+        llm = get_llm(temperature=0.1)  # 知识问答不需要太发散，温度调低
+        resp = await llm.ainvoke([
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_query)
+        ])
+
+        return {"messages": [resp], "error": None}
+
+    except Exception as e:
+        print(f"\n======== RAG 检索报错了: {str(e)} ========\n")
+        return {
+            "messages": [AIMessage(content=f"知识库检索失败，请稍后再试。")],
+            "error": str(e),
+            "retry_count": state.get("retry_count", 0) + 1
+        }
 
 async def general_node(state) -> dict:
     llm = get_llm(temperature=0.3)

@@ -57,16 +57,30 @@ class HybridRetriever:
     def rrf_fusion(self, vector_res: list, bm25_res: list, k: int = 60, top_k: int = 5):
         """RRF (Reciprocal Rank Fusion) 融合排序算法"""
         rrf_scores = {}
+        doc_pool = {}  # 【新增】用于存放完整的文档对象信息
 
         # 计算向量检索的 RRF 分数
         for rank, doc in enumerate(vector_res):
             content = doc.page_content
             rrf_scores[content] = rrf_scores.get(content, 0) + 1 / (k + rank + 1)
 
+            # 【新增】保存完整信息（包含 metadata）
+            doc_pool[content] = {
+                "page_content": content,
+                "metadata": doc.metadata
+            }
+
+
         # 计算 BM25 检索的 RRF 分数
         for rank, doc in enumerate(bm25_res):
             content = doc["page_content"]
             rrf_scores[content] = rrf_scores.get(content, 0) + 1 / (k + rank + 1)
+
+            # 【新增】保存完整信息
+            doc_pool[content] = {
+                "page_content": content,
+                "metadata": doc.get("metadata", {})
+            }
 
         # 按融合分数降序排序sorted_docs是元组列表
         sorted_docs = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
@@ -74,7 +88,9 @@ class HybridRetriever:
         # 还原格式->字典列表
         fused_results = []
         for content, score in sorted_docs:
-            fused_results.append({"page_content": content, "rrf_score": score})
+            fused_results.append({"page_content": content,
+                                  "rrf_score": score,
+                                  "metadata": doc_pool[content]["metadata"]})
         return fused_results
 
     def hybrid_search(self, query: str, top_k: int = 3):
