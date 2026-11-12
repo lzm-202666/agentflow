@@ -32,6 +32,7 @@ class BaseTool:
         except Exception as e:
             return {
                 "success":False,
-                "data":result,
+                "data":None,
+                "error": str(e),
                 "latency_ms":int((time.time()-start) * 1000)
             }

@@ -6,6 +6,7 @@
 - [x] Week 2: LangGraph 意图路由、LLM 工厂、基于 Pydantic 的结构化输出
 - [x] Week 3: 真实 DB 工具调用、SqliteSaver 多轮记忆、死循环重试兜底、Trace 监控与 Token 成本落库
 - [x] Week 4: 企业级 RAG 混合检索（BM25+向量）、qwen3-rerank 重排、评测闭环与 Agent 节点接入
+- [x] Week 5 (进行中): 全局 Token 成本无侵入监控、Prometheus 指标打点、Streamlit 可视化管理平台
 
 ## 更新日志 (Changelog)
 
@@ -33,3 +34,10 @@
 4. **评测闭环与 Agent 节点接入**：
    - 构建针对新能源车企的强干扰测试集，跑通纯向量 vs 混合检索 vs 重排的 Recall 指标对比。
    - **重写真实 `rag_node`**：将混合检索与重排逻辑正式接入 LangGraph 状态机。配合 Prompt 防幻觉约束，成功实现“查询专属知识（BMS端口）”走 RAG，“查销售额”走 DB，“问食堂”走 General 的完美多路分流。
+
+   
+### 📊 Week 5 核心升级：无侵入式可观测架构与全局监控
+在不侵入业务代码的前提下，实现了生产级的成本与性能监控：
+1. **重构 Token 统计逻辑**：废弃在 API 路由层手动解析事件流的笨重做法，引入 LangChain `AsyncCallbackHandler`。
+2. **全局监控与上下文隔离**：结合 Python `ContextVar` 实现并发请求下的监控数据隔离，精准捕获输入/输出 Token 与 API 成本，并全局打点至 Prometheus 指标。
+3. **接口性能追踪**：加入全局请求延迟 Histogram 与请求数 Counter，支撑后续 Grafana 监控大盘的接入。
