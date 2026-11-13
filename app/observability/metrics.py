@@ -1,7 +1,7 @@
 from fastapi import Request,Response
 from prometheus_client import CONTENT_TYPE_LATEST,Counter,Histogram,generate_latest
 
-#定义指标实例对象
+#定义指标实例对象 监控指标管理器
 REQUEST_COUNT = Counter(
     "agentflow_requests_total",
     "Total HTTP requests",

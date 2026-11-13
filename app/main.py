@@ -4,7 +4,6 @@ from app.config import settings
 from app.api.chat import router as chat_router
 from app.db.session import init_db
 from app.memory.checkpointer import checkpointer_cm
-from app.observability.metrics import metrics_endpoint
 from contextlib import asynccontextmanager
 from app.observability.metrics import metrics_endpoint
 
