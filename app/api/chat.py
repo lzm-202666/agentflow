@@ -121,6 +121,10 @@ async def chat_stream(req: ChatRequest, request: Request):
 
             yield {"event": "done", "data": json.dumps({"trace_id": trace_id, "latency_ms": latency_ms})}
 
+        except Exception as e:
+            print(f"\n[ERROR] 聊天流式接口发生报错: {e}")
+            yield {"event": "error", "data": json.dumps({"error": str(e)})}
+
         finally:
             # 清理上下文
             trace_context.reset(token_ctx)

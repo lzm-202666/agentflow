@@ -24,7 +24,7 @@ def run_eval():
     hybrid_rerank_recall = 0
     total = len(dataset)
 
-    print(f"🚀 开始跑分，共 {total} 条测试用例...\n")
+    print(f"开始跑分，共 {total} 条测试用例...\n")
 
     for i, item in enumerate(dataset):
         query = item["query"]
@@ -47,10 +47,10 @@ def run_eval():
         hybrid_rerank_recall += hr_hit
 
         print(f"[{i + 1}/{total}] 问: {query}")
-        print(f" -> 纯向量: {'✅' if v_hit else '❌'} | 混合: {'✅' if h_hit else '❌'} | 重排: {'✅' if hr_hit else '❌'}")
+        print(f" -> 纯向量: {'PASS' if v_hit else 'FAIL'} | 混合: {'PASS' if h_hit else 'FAIL'} | 重排: {'PASS' if hr_hit else 'FAIL'}")
 
     print("\n" + "=" * 30)
-    print("📊 最终 Baseline 对比结果 (Recall@5 / Recall@3):")
+    print("最终 Baseline 对比结果 (Recall@5 / Recall@3):")
     print(f"1. 纯向量检索召回率: {vector_recall / total:.2%}")
     print(f"2. 混合检索(RRF)召回率: {hybrid_recall / total:.2%}")
     print(f"3. 混合+重排召回率: {hybrid_rerank_recall / total:.2%}")
