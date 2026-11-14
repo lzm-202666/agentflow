@@ -1,21 +1,9 @@
-import aiosqlite
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from app.config import settings
 
-# ==========================================
-# 【补丁】修复 aiosqlite 0.22.0 带来的破坏性更改
-# 官方 Issue #6583 推荐方案
-# ==========================================
-if not hasattr(aiosqlite.Connection, "is_alive"):
-    def _is_alive_patch(self):
-        return True  # 永远认为是活着的
+# 注意：LangGraph 的 PostgresSaver 需要同步的驱动字符串（psycopg），但底层会异步处理
+# 所以这里要把 asyncpg 的标识去掉，直接用 postgresql://
+db_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
 
-
-    aiosqlite.Connection.is_alive = _is_alive_patch
-
-# ==========================================
-# 正常实例化
-# ==========================================
-
-# 注意：这个 saver 是一个 context manager，我们在 FastAPI 的 lifespan 里启动它
-#checkpointer操纵checpointer.db文件的对象
-checkpointer_cm = AsyncSqliteSaver.from_conn_string("checkpoints.db")
+# 注意：这仍然是一个 context manager，在 main.py 的 lifespan 中启动
+checkpointer_cm = AsyncPostgresSaver.from_conn_string(db_url)

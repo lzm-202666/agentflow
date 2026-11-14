@@ -1,0 +1,22 @@
+# 排除环境配置和密钥
+.env
+.env.local
+.env.example
+
+# 排除 Python 缓存和虚拟环境
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# 排除本地数据库和向量库
+*.db
+checkpoints.db
+chroma_data/
+
+# 排除开发工具配置
+.idea/
+.vscode/
+.git/
+.gitignore

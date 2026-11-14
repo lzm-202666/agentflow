@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # 1. Postgres 数据库
+  db:
+    image: postgres:15-alpine
+    environment:
+        POSTGRES_USER: ${POSTGRES_USER:-agentflow}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agentflow_pass} # 从 .env 读取，没有则用默认
+        POSTGRES_DB: ${POSTGRES_DB:-agentflow}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    # 生产环境通常不暴露 db 端口，这里为了你本地调试方便保留
+    ports:
+      - "5432:5432"
+
+  # 2. FastAPI 后端服务
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-agentflow}:${POSTGRES_PASSWORD:-agentflow_pass}@db:5432/${POSTGRES_DB:-agentflow}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_BASE_URL=${LLM_BASE_URL}
+      - LLM_MODEL=${LLM_MODEL}
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 3. Streamlit 前端服务（复用同一个镜像，只改启动命令）
+  ui:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    command: ["streamlit", "run", "ui/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    environment:
+      - API_URL=http://app:8000/api/chat/stream
+      - DATABASE_URL_SYNC=postgresql://${POSTGRES_USER:-agentflow}:${POSTGRES_PASSWORD:-agentflow_pass}@db:5432/${POSTGRES_DB:-agentflow}
+    ports:
+      - "8501:8501"
+    depends_on:
+      - app
+
+  # 4. Prometheus 监控拉取
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - app
+
+  # 5. Grafana 可视化大盘
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+
+volumes:
+  pgdata:

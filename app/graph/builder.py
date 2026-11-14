@@ -25,6 +25,7 @@ def route_after_db_query(state) -> str:
         return "fallback" #兜底
 #全局状态图构建
 def build_graph(checkpointer=None):
+    #构建图
     g = StateGraph(AgentState)
 
     g.add_node("supervisor",supervisor_node)
@@ -55,7 +56,7 @@ def build_graph(checkpointer=None):
 
     g.add_edge("rag",END)
     g.add_edge("general",END)
-    #编译时传入 checkpointer
+    #编译图时传入 checkpointer
     return g.compile(checkpointer=checkpointer)
 
 #编译图：校验结构，做成可执行对象# 不要再全局实例化了，统一在 chat.py 里按需实例化并注入 checkpointer
