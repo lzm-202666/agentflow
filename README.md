@@ -40,3 +40,6 @@ AgentFlow 是一个基于 **LangGraph、FastAPI、Streamlit** 构建的轻量级
    cd agentflow
    cp .env.example .env
    # 填入你的 LLM_API_KEY 和 DASHSCOPE_API_KEY
+   
+## 📝 踩坑与架构思考 (博客)
+- [大模型应用踩坑实录：Streamlit 局部状态污染与 Docker 挂载的连环局](https://juejin.cn/post/7708586194205196315)
