@@ -59,5 +59,5 @@ def build_graph(checkpointer=None):
     #编译图时传入 checkpointer
     return g.compile(checkpointer=checkpointer)
 
-#编译图：校验结构，做成可执行对象# 不要再全局实例化了，统一在 chat.py 里按需实例化并注入 checkpointer
+#编译图：校验结构，做成可执行对象# 不要再全局实例化了，统一在 1_chat.py 里按需实例化并注入 checkpointer
 # graph = build_graph()

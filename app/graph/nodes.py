@@ -74,10 +74,11 @@ async def rag_node(state) -> dict:
 
         return {"messages": [resp], "error": None}
 
+
     except Exception as e:
-        print(f"\n======== RAG 检索报错了: {str(e)} ========\n")
+        print(f"\n[ERROR] RAG 检索报错了: {e}")  # 把真实错误打在后端日志里
         return {
-            "messages": [AIMessage(content=f"知识库检索失败，请稍后再试。")],
+            "messages": [AIMessage(content=f"知识库检索失败: {str(e)}")],  # 直接把错误显示在前端
             "error": str(e),
             "retry_count": state.get("retry_count", 0) + 1
         }

@@ -15,6 +15,8 @@ async def lifespan(app: FastAPI):
 
     #初始化 LangGraph 的Checkpointer(存对话历史）
     async with checkpointer_cm as cp:
+        # 【关键修复】显式初始化
+        await cp.setup()
         app.state.checkpointer = cp
         yield
 

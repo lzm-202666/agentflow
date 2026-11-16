@@ -4,3 +4,13 @@
 {"query": "如果私自把电池配方传给公有云大模型，会罚款吗？", "ground_truth": "解除劳动合同"}
 {"query": "数据脱敏网关是在调用私有化Llama3之前还是之后？", "ground_truth": "脱敏网关"}
 {"query": "如果我只看到 OTA 报错，是查 ERR-401 吗？", "ground_truth": "ERR-504"}
+{"query": "车机端的OTA报错代码对应的是什么意思？", "ground_truth": "Gateway Timeout"}
+{"query": "出差如果要住酒店，深圳的报销上限是多少？", "ground_truth": "600"}
+{"query": "gRPC协议如果超时了，日志里会报什么错？", "ground_truth": "context deadline exceeded"}
+{"query": "Kafka如果崩了，是哪个错误码？", "ground_truth": "ERR-909"}
+{"query": "采购A100显卡，必须要几个人签字？", "ground_truth": "双签"}
+{"query": "如果想用大模型，私自用文心一言可以吗？", "ground_truth": "严禁"}
+{"query": "售后工程师去充电站，除了差旅费还有什么钱？", "ground_truth": "150"}
+{"query": "Qwen-14B单卡显存超过多少会OOM？", "ground_truth": "78GB"}
+{"query": "发票的税率如果不对，还能报销吗？", "ground_truth": "不予报销"}
+{"query": "开DEBUG模式会有什么影响？", "ground_truth": "磁盘 I/O 飙升"}

@@ -30,6 +30,9 @@ services:
       - LLM_BASE_URL=${LLM_BASE_URL}
       - LLM_MODEL=${LLM_MODEL}
       - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
+    volumes:
+      - ./chroma_data:/app/chroma_data   # 【新增】挂载本地向量库
+      - ./data:/app/data                 # 【新增】挂载本地文档
     ports:
       - "8000:8000"
     depends_on:
@@ -41,10 +44,17 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    command: ["streamlit", "run", "ui/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    command: [ "streamlit", "run", "ui/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0" ]
     environment:
       - API_URL=http://app:8000/api/chat/stream
       - DATABASE_URL_SYNC=postgresql://${POSTGRES_USER:-agentflow}:${POSTGRES_PASSWORD:-agentflow_pass}@db:5432/${POSTGRES_DB:-agentflow}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_BASE_URL=${LLM_BASE_URL}
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
+    volumes:
+      - ./ui:/app/ui             # 【核心】挂载前端目录
+      - ./chroma_data:/app/chroma_data
+      - ./data:/app/data
     ports:
       - "8501:8501"
     depends_on:
